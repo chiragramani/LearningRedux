@@ -1,33 +1,3 @@
-//// Library code
-// When you invoke createStore, it creates the store and passes the initial state to you back.
-function createStore(reducer) {
-  // The storee should support the following 5 parts.
-  // 1. State Tree
-  // 2. Get the current state.
-  // 3. Listen to changes on the state.
-  // 4. Update the state.
-  let state;
-  let listeners = [];
-  const getState = () => state;
-  const dispatch = action => {
-    state = reducer(state, action);
-    listeners.forEach(listener => listener());
-  };
-  /// Listener or callbacks to be invoked when the state changes.
-  /// Returns a function, which when invoked, unsubscribes from state updates.
-  const subscribe = listener => {
-    listeners.push(listener);
-    return () => {
-      listeners = listeners.filter(l => l !== listener);
-    };
-  };
-  return {
-    getState,
-    subscribe,
-    dispatch
-  };
-}
-
 const ADD_TODO = "ADD_TODO";
 const REMOVE_TODO = "REMOVE_TODO";
 const TOGGLE_TODO = "TOGGLE_TODO";
@@ -97,15 +67,11 @@ function goals(state = [], action) {
   return state;
 }
 
-function app(state = {}, action) {
-  return {
-    todos: todos(state.todos, action),
-    goals: goals(state.goals, action)
-  };
-}
-
 /// Creating the store and passsing the required reducer functions.
-const store = createStore(app);
+const store = Redux.createStore(Redux.combineReducers({
+  todos,
+  goals
+}));
 
 const unsubscribe = store.subscribe(() => {
   document.getElementsByClassName("todos")[0].innerHTML = '';
@@ -127,25 +93,26 @@ function generateId() {
 function createRemoveButton(onClick) {
   const removeButton = document.createElement('button');
   removeButton.innerHTML = 'X'
-  removeButton.addEventListener('click', onClick)
+  removeButton.addEventListener('click', onClick, false)
   return removeButton
 }
 
 function addTodoToDOM(todo) {
   const todosList = document.getElementsByClassName("todos")[0];
   const node = document.createElement("li");
-  const text = document.createTextNode(todo.name);
-  node.appendChild(text)
+  const textNode = document.createTextNode(todo.name);
+  node.appendChild(textNode)
+  node.style.textDecoration = todo.complete ? 'line-through' : 'none';
   const removeButton = createRemoveButton(() => {
     store.dispatch(removeTodoAction(todo.id))
   })
   node.appendChild(removeButton)
-  node.style.textDecoration = todo.complete ? 'line-through' : 'none';
-
   todosList.appendChild(node);
-  text.addEventListener('click', () => {
-    store.dispatch(addTodoToggleAction(todo.id))
+  node.addEventListener('click', () => {
+    console.log('asassas');
+    store.dispatch(addTodoToggleAction(todo.id), false)
   })
+
 }
 
 function addGoalToDOM(goal) {
