@@ -90,7 +90,7 @@ const logger = store => next => action => {
   const result = next(action);
   console.log("The new state is: ", store.getState());
   console.groupEnd();
-  return next(action);
+  return result;
 };
 
 const middleWares = [logger, checker];
@@ -104,14 +104,6 @@ const store = Redux.createStore(
   Redux.applyMiddleware(...middleWares)
 );
 
-const unsubscribe = store.subscribe(() => {
-  document.getElementsByClassName("todos")[0].innerHTML = "";
-  document.getElementsByClassName("goals")[0].innerHTML = "";
-  //
-  const { todos, goals } = store.getState();
-  todos.forEach(todo => addTodoToDOM(todo));
-  goals.forEach(goal => addGoalToDOM(goal));
-});
 
 function generateId() {
   return (
@@ -121,82 +113,3 @@ function generateId() {
   );
 }
 
-function createRemoveButton(onClick) {
-  const removeButton = document.createElement("button");
-  removeButton.innerHTML = "X";
-  removeButton.addEventListener("click", onClick, false);
-  return removeButton;
-}
-
-function addTodoToDOM(todo) {
-  const todosList = document.getElementsByClassName("todos")[0];
-  const node = document.createElement("li");
-  const textNode = document.createTextNode(todo.name);
-  node.appendChild(textNode);
-  node.style.textDecoration = todo.complete ? "line-through" : "none";
-  const removeButton = createRemoveButton(() => {
-    store.dispatch(removeTodoAction(todo.id));
-  });
-  node.appendChild(removeButton);
-  todosList.appendChild(node);
-  node.addEventListener("click", () => {
-    console.log("asassas");
-    store.dispatch(addTodoToggleAction(todo.id), false);
-  });
-}
-
-function addGoalToDOM(goal) {
-  /// Adding the list element
-  const goalList = document.getElementsByClassName("goals")[0];
-  const newGoalListElement = document.createElement("li");
-  newGoalListElement.textContent = goal.name;
-  /// Remove button
-  const removeButton = createRemoveButton(() => {
-    store.dispatch(removeGoalAction(goal.id));
-  });
-  newGoalListElement.appendChild(removeButton);
-  goalList.appendChild(newGoalListElement);
-}
-
-function addTodo() {
-  const todoInput = document.getElementById("todo");
-  const currentText = todoInput.value;
-  todoInput.value = "";
-  const todo = {
-    id: generateId(),
-    name: currentText,
-    complete: false
-  };
-  store.dispatch(addTodoAction(todo));
-}
-
-function addGoal() {
-  const goalInput = document.getElementById("goal");
-  const currentText = goalInput.value;
-  goalInput.value = "";
-  const goal = {
-    id: generateId(),
-    name: currentText
-  };
-  // checkAndDispatch(store, addGoalAction(goal)); But this is not a middleware.
-  store.dispatch(addGoalAction(goal));
-}
-
-function listenToTodoClick() {
-  const addTodoButton = document.getElementById("todoBtn");
-  addTodoButton.addEventListener("click", () => {
-    addTodo();
-  });
-}
-
-function listenToGoalClick() {
-  const addGoalButton = document.getElementById("goalBtn");
-  addGoalButton.addEventListener("click", () => {
-    addGoal();
-  });
-}
-
-document.addEventListener("DOMContentLoaded", () => {
-  this.listenToTodoClick();
-  this.listenToGoalClick();
-});
