@@ -28,17 +28,36 @@ function createStore(reducer) {
   };
 }
 
+const ADD_TODO = "ADD_TODO";
+const REMOVE_TODO = "REMOVE_TODO";
+const TOGGLE_TODO = "TOGGLE_TODO";
+const ADD_GOAL = "ADD_GOAL";
+const REMOVE_GOAL = "REMOVE_GOAL";
+
+/// Action Creators
+function addTodoAction(todo) {
+  return {
+    type: ADD_TODO,
+    todo
+  }
+}
+function removeTodoAction(todo) {
+  return  {
+    type: REMOVE_TODO,
+    id
+  }
+}
+
 //// Reducer functions are specific to business logic, therefore App's code.
 function todos(state = [], action) {
   switch (action.type) {
-    case "ADD_TODO":
+    case ADD_TODO:
       return state.concat([action.todo]);
-      return state.concat([action.todo]);
-    case "REMOVE_TODO":
-      return state.filter(todo => todo.id !== action.id);
-    case "TOGGLE_TODO":
+    case REMOVE_TODO:
+      return state.filter(todo => todo.id !== action.todo.id);
+    case TOGGLE_TODO:
       return state.map(todo =>
-        todo.id !== action.id
+        todo.id !== action.todo.id
           ? todo
           : Object.assign({}, todo, { complete: !todo.complete })
       );
@@ -47,17 +66,28 @@ function todos(state = [], action) {
   }
 }
 
+function goals(state = [], action) {
+  switch (action.type) {
+    case ADD_GOAL:
+      return state.concat([action.goal]);
+    case REMOVE_GOAL:
+      return state.filter(aGoal => aGoal.id !== action.goal.id);
+    default:
+      return state;
+  }
+  return state;
+}
+
+function app(state = {}, action) {
+  return {
+    todos: todos(state.todos, action),
+    goals: goals(state.goals, action)
+  };
+}
+
 /// Creating the store and passsing the required reducer functions.
-const store = createStore(todos);
+const store = createStore(app);
 
 const unsubscribe = store.subscribe(() => {
   console.log("The new state is", store.getState());
-});
-
-store.dispatch({
-  type: "ADD_TODO",
-  todo: {
-    id: 0,
-    content: "Learn Redux"
-  }
 });
