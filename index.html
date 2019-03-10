@@ -17,23 +17,31 @@
     <script type="text/javascript" src="index.js"></script>
     <script type="text/babel">
       function List(props) {
-        
         return (
           <ul>
-          {props.items.map(item => (
-            <li 
-            key={item.id} 
-            onClick={e => {
-              e.preventDefault();
-              props.onClick(item);
-            }}
-            style={{
-              textDecoration: !item.complete ? 'none' : 'line-through'
-            }}>{item.name}   <button onClick={ e => {
-              e.preventDefault();
-              props.onRemove(item);
-            }}> X </button></li>
-          ))}
+            {props.items.map(item => (
+              <li
+                key={item.id}
+                onClick={e => {
+                  e.preventDefault();
+                  props.onClick(item);
+                }}
+                style={{
+                  textDecoration: !item.complete ? "none" : "line-through"
+                }}
+              >
+                {item.name}{" "}
+                <button
+                  onClick={e => {
+                    e.preventDefault();
+                    props.onRemove(item);
+                  }}
+                >
+                  {" "}
+                  X{" "}
+                </button>
+              </li>
+            ))}
           </ul>
         );
       }
@@ -42,25 +50,19 @@
         componentDidMount() {
           const { store } = this.props;
           store.subscribe(() => this.forceUpdate());
-          Promise.all([ 
-             API.fetchTodos(),
-             API.fetchGoals()
-          ]).then(([todos, goals]) => {
-            store.dispatch(receiveDataAction(todos, goals))
-          })
-          .catch(e => console.log(e))
+          store.dispatch(handleInitialData());
         }
 
         render() {
           const { store } = this.props;
           const { todos, goals, loading } = store.getState();
-          if(loading === true) {
-            return <h3>Loading...</h3>
+          if (loading === true) {
+            return <h3>Loading...</h3>;
           }
           return (
             <div>
-              <Todos store={store} todos={todos}/>
-              <Goals store={store} goals={goals}/>
+              <Todos store={store} todos={todos} />
+              <Goals store={store} goals={goals} />
             </div>
           );
         }
@@ -70,28 +72,19 @@
         addItem = e => {
           e.preventDefault();
           const name = this.inputElement.value;
-          this.inputElement.value = "";
-          return API.saveTodo(name)
-          .then((todo) =>  this.props.store.dispatch(addTodoAction(todo)))
-          .catch(e => {
-            console.log('Error while adding todo at the server: ', e);
-          })
+          this.props.store.dispatch(
+            handleAddTodo(name, () => (this.inputElement.value = ""))
+          );
         };
 
-        onRemove = (todo) => {
-          console.log('on remove called')
-          this.props.store.dispatch(handleDeleteTodo(todo))
-        }
+        onRemove = todo => {
+          console.log("on remove called");
+          this.props.store.dispatch(handleDeleteTodo(todo));
+        };
 
-        onTodoClick = (todo) => {
-          this.props.store.dispatch(addTodoToggleAction(todo.id));
-          return API.saveTodoToggle(todo.id)
-          .then(() => console.log('Toggled successfully from server'))
-          .catch(e => {
-            console.log('Error while toggling todo: ', e);
-            this.props.store.dispatch(addTodoToggleAction(todo.id));
-          })
-        }
+        onTodoClick = todo => {
+          this.props.store.dispatch(handleTodoToggle(todo));
+        };
 
         render() {
           return (
@@ -103,7 +96,11 @@
                 ref={input => (this.inputElement = input)}
               />
               <button onClick={this.addItem}>Add Todo</button>
-              <List items={this.props.todos} onRemove={this.onRemove} onClick={this.onTodoClick}/>
+              <List
+                items={this.props.todos}
+                onRemove={this.onRemove}
+                onClick={this.onTodoClick}
+              />
             </div>
           );
         }
@@ -113,42 +110,38 @@
         addItem = e => {
           e.preventDefault();
           const name = this.input.value;
-          this.input.value = "";
-          return API.saveGoal(name)
-          .then((goal) => this.props.store.dispatch(addGoalAction(goal)))
-          .catch(e => (
-            console.log('Error while adding Goal at the server: ', e)
-          ))
+          this.props.store.dispatch(
+            handleAddGoal(name, () => (this.input.value = ""))
+          );
         };
 
-         onRemove = (goal) => {
-          this.props.store.dispatch(removeGoalAction(goal.id));
-          API.deleteGoal(goal.id)
-          .then(() => console.log('Goal deleted from server succcessfully'))
-          .catch(() => {
-            console.log('Error while removing toddo from server.')
-            this.props.store.dispatch(addGoalAction(goal));
-            alert('an Error Occured')
-          })
-        }
+        onRemove = goal => {
+          this.props.store.dispatch(handleDeleteGoal(goal));
+        };
 
-        onGoalClick = (goal) => {
-          
-        }
+        onGoalClick = goal => {};
 
         render() {
           return (
             <div>
               <h1>GOALS</h1>
-              <input type="text" placeholder="Add Goals" ref={input => this.input = input}/>
+              <input
+                type="text"
+                placeholder="Add Goals"
+                ref={input => (this.input = input)}
+              />
               <button onClick={this.addItem}>Add Goal</button>
-              <List items={this.props.goals} onRemove={this.onRemove} onClick={this.onGoalClick}/>
+              <List
+                items={this.props.goals}
+                onRemove={this.onRemove}
+                onClick={this.onGoalClick}
+              />
             </div>
           );
         }
       }
-      
-      ReactDOM.render(<App store={store}/>, document.getElementById("app"));
+
+      ReactDOM.render(<App store={store} />, document.getElementById("app"));
     </script>
   </body>
 </html>

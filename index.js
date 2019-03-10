@@ -3,7 +3,7 @@ const REMOVE_TODO = "REMOVE_TODO";
 const TOGGLE_TODO = "TOGGLE_TODO";
 const ADD_GOAL = "ADD_GOAL";
 const REMOVE_GOAL = "REMOVE_GOAL";
-const RECEIVE_DATA = 'RECEIVE_DATA';
+const RECEIVE_DATA = "RECEIVE_DATA";
 
 /// Action Creators
 function addTodoAction(todo) {
@@ -39,24 +39,83 @@ function removeTodoAction(id) {
 }
 
 function handleDeleteTodo(todo) {
-  return (dispatch) => {
+  return dispatch => {
     dispatch(removeTodoAction(todo.id));
     return API.deleteTodo(todo.id)
-          .then(() => console.log('Todo deleted from server succcessfully'))
-          .catch(() => {
-            console.log('Error while removing todo from server.')
-            dispatch(addTodoAction(todo));
-            alert('an Error Occured')
-          })
-  }
+      .then(() => console.log("Todo deleted from server succcessfully"))
+      .catch(() => {
+        console.log("Error while removing todo from server.");
+        dispatch(addTodoAction(todo));
+        alert("an Error Occured");
+      });
+  };
+}
+
+function handleDeleteGoal(goal) {
+  return dispatch => {
+    dispatch(removeGoalAction(goal.id));
+    return API.deleteGoal(goal.id)
+      .then(() => console.log("Goal deleted from server succcessfully"))
+      .catch(() => {
+        console.log("Error while removing goal from server.");
+        dispatch(addGoalAction(goal));
+        alert("an Error Occured");
+      });
+  };
 }
 
 function receiveDataAction(todos, goals) {
-  return  {
+  return {
     type: RECEIVE_DATA,
     todos,
     goals
-  }
+  };
+}
+
+function handleInitialData() {
+  return dispatch => {
+    return Promise.all([API.fetchTodos(), API.fetchGoals()])
+      .then(([todos, goals]) => {
+        dispatch(receiveDataAction(todos, goals));
+      })
+      .catch(e => console.log(e));
+  };
+}
+
+function handleTodoToggle(todo) {
+  return dispatch => {
+    dispatch(addTodoToggleAction(todo.id));
+    return API.saveTodoToggle(todo.id)
+      .then(() => console.log("Toggled successfully from server"))
+      .catch(e => {
+        console.log("Error while toggling todo: ", e);
+        dispatch(addTodoToggleAction(todo.id));
+      });
+  };
+}
+
+function handleAddTodo(name, onSuccess) {
+  return dispatch => {
+    return API.saveTodo(name)
+      .then(todo => {
+        onSuccess();
+        dispatch(addTodoAction(todo));
+      })
+      .catch(e => {
+        console.log("Error while adding todo at the server: ", e);
+      });
+  };
+}
+
+function handleAddGoal(name, onSuccess) {
+  return dispatch => {
+    return API.saveGoal(name)
+      .then(goal => {
+        onSuccess();
+        dispatch(addGoalAction(goal));
+      })
+      .catch(e => console.log("Error while adding Goal at the server: ", e));
+  };
 }
 
 //// Reducer functions are specific to business logic, therefore App's code.
@@ -73,7 +132,7 @@ function todos(state = [], action) {
           : Object.assign({}, todo, { complete: !todo.complete })
       );
     case RECEIVE_DATA:
-      return state.concat(action.todos)
+      return state.concat(action.todos);
     default:
       return state;
   }
@@ -86,7 +145,7 @@ function goals(state = [], action) {
     case REMOVE_GOAL:
       return state.filter(aGoal => aGoal.id !== action.id);
     case RECEIVE_DATA:
-      return state.concat(action.goals)
+      return state.concat(action.goals);
     default:
       return state;
   }
@@ -95,9 +154,11 @@ function goals(state = [], action) {
 
 //// Loading reducer
 function loading(state = true, action) {
-  switch(action.type) {
-    case RECEIVE_DATA: return false
-    default: return state
+  switch (action.type) {
+    case RECEIVE_DATA:
+      return false;
+    default:
+      return state;
   }
 }
 
@@ -127,12 +188,12 @@ const logger = store => next => action => {
   return result;
 };
 
-const thunk = (store) => (next) => (action) => {
-  if(typeof action === 'function') {
-    return action(store.dispatch)
+const thunk = store => next => action => {
+  if (typeof action === "function") {
+    return action(store.dispatch);
   }
-  return next(action)
-}
+  return next(action);
+};
 
 const middleWares = [ReduxThunk.default, logger, checker];
 
@@ -146,7 +207,6 @@ const store = Redux.createStore(
   Redux.applyMiddleware(...middleWares)
 );
 
-
 function generateId() {
   return (
     Math.random()
@@ -154,4 +214,3 @@ function generateId() {
       .substring(2) + new Date().getTime().toString(36)
   );
 }
-
