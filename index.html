@@ -16,6 +16,7 @@
     <div id="app"></div>
     <script type="text/javascript" src="index.js"></script>
     <script type="text/babel">
+      const Context = React.createContext(store);
       function List(props) {
         return (
           <ul>
@@ -46,6 +47,16 @@
         );
       }
 
+      class ConnectedApp extends React.Component {
+        render() {
+          return (
+            <Context.Consumer>
+              {store => <App store={store} />}
+            </Context.Consumer>
+          );
+        }
+      }
+
       class App extends React.Component {
         componentDidMount() {
           const { store } = this.props;
@@ -55,15 +66,28 @@
 
         render() {
           const { store } = this.props;
-          const { todos, goals, loading } = store.getState();
+          const { loading } = store.getState();
           if (loading === true) {
             return <h3>Loading...</h3>;
           }
           return (
             <div>
-              <Todos store={store} todos={todos} />
-              <Goals store={store} goals={goals} />
+              <ConnectedTodos />
+              <ConnectedGoals />
             </div>
+          );
+        }
+      }
+
+      class ConnectedTodos extends React.Component {
+        render() {
+          return (
+            <Context.Consumer>
+              {store => {
+                const { todos } = store.getState();
+              return <Todos todos={todos} dispatch={store.dispatch} />;
+              }}
+            </Context.Consumer>
           );
         }
       }
@@ -72,18 +96,18 @@
         addItem = e => {
           e.preventDefault();
           const name = this.inputElement.value;
-          this.props.store.dispatch(
+          this.props.dispatch(
             handleAddTodo(name, () => (this.inputElement.value = ""))
           );
         };
 
         onRemove = todo => {
           console.log("on remove called");
-          this.props.store.dispatch(handleDeleteTodo(todo));
+          this.props.dispatch(handleDeleteTodo(todo));
         };
 
         onTodoClick = todo => {
-          this.props.store.dispatch(handleTodoToggle(todo));
+          this.props.dispatch(handleTodoToggle(todo));
         };
 
         render() {
@@ -106,17 +130,31 @@
         }
       }
 
+      class ConnectedGoals extends React.Component {
+        render() {
+          return (
+            <Context.Consumer>
+              {store => {
+                const { dispatch } = store;
+                const { goals } = store.getState();
+                return <Goals goals={goals} dispatch={dispatch} />;
+              }}
+            </Context.Consumer>
+          );
+        }
+      }
+
       class Goals extends React.Component {
         addItem = e => {
           e.preventDefault();
           const name = this.input.value;
-          this.props.store.dispatch(
+          this.props.dispatch(
             handleAddGoal(name, () => (this.input.value = ""))
           );
         };
 
         onRemove = goal => {
-          this.props.store.dispatch(handleDeleteGoal(goal));
+          this.props.dispatch(handleDeleteGoal(goal));
         };
 
         onGoalClick = goal => {};
@@ -141,7 +179,22 @@
         }
       }
 
-      ReactDOM.render(<App store={store} />, document.getElementById("app"));
+      class Provider extends React.Component {
+        render() {
+          return (
+            <Context.Provider value={this.props.store}>
+              {this.props.children}
+            </Context.Provider>
+          );
+        }
+      }
+
+      ReactDOM.render(
+        <Provider store={store}>
+          <ConnectedApp />
+        </Provider>,
+        document.getElementById("app")
+      );
     </script>
   </body>
 </html>
