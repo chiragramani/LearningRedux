@@ -9,6 +9,8 @@
     <script src="https://unpkg.com/react@16.3.0-alpha.1/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@16.3.0-alpha.1/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/babel-standalone@6.15.0/babel.min.js"></script>
+    <script src="https://unpkg.com/redux-thunk@2.2.0/dist/redux-thunk.min.js"></script>
+    <script src="https://tylermcginnis.com/goals-todos-api/index.js"></script>
   </head>
   <body>
     <div id="app"></div>
@@ -21,12 +23,13 @@
           {props.items.map(item => (
             <li 
             key={item.id} 
-            onClick={() => (
-              props.onClick(item)
-            )}
+            onClick={e => {
+              e.preventDefault();
+              props.onClick(item);
+            }}
             style={{
               textDecoration: !item.complete ? 'none' : 'line-through'
-            }}>{item.name}<button onClick={ e => {
+            }}>{item.name}   <button onClick={ e => {
               e.preventDefault();
               props.onRemove(item);
             }}> X </button></li>
@@ -36,15 +39,24 @@
       }
 
       class App extends React.Component {
-
         componentDidMount() {
           const { store } = this.props;
           store.subscribe(() => this.forceUpdate());
+          Promise.all([ 
+             API.fetchTodos(),
+             API.fetchGoals()
+          ]).then(([todos, goals]) => {
+            store.dispatch(receiveDataAction(todos, goals))
+          })
+          .catch(e => console.log(e))
         }
 
         render() {
           const { store } = this.props;
-          const { todos, goals } = store.getState();
+          const { todos, goals, loading } = store.getState();
+          if(loading === true) {
+            return <h3>Loading...</h3>
+          }
           return (
             <div>
               <Todos store={store} todos={todos}/>
@@ -59,20 +71,26 @@
           e.preventDefault();
           const name = this.inputElement.value;
           this.inputElement.value = "";
-          const todo = {
-            id: generateId(),
-            name: name,
-            complete: false
-          };
-          this.props.store.dispatch(addTodoAction(todo));
+          return API.saveTodo(name)
+          .then((todo) =>  this.props.store.dispatch(addTodoAction(todo)))
+          .catch(e => {
+            console.log('Error while adding todo at the server: ', e);
+          })
         };
 
         onRemove = (todo) => {
-          this.props.store.dispatch(removeTodoAction(todo.id));
+          console.log('on remove called')
+          this.props.store.dispatch(handleDeleteTodo(todo))
         }
 
         onTodoClick = (todo) => {
           this.props.store.dispatch(addTodoToggleAction(todo.id));
+          return API.saveTodoToggle(todo.id)
+          .then(() => console.log('Toggled successfully from server'))
+          .catch(e => {
+            console.log('Error while toggling todo: ', e);
+            this.props.store.dispatch(addTodoToggleAction(todo.id));
+          })
         }
 
         render() {
@@ -96,16 +114,22 @@
           e.preventDefault();
           const name = this.input.value;
           this.input.value = "";
-          const goal = {
-            id: generateId(),
-            name: name,
-            complete: false
-          };
-          this.props.store.dispatch(addGoalAction(goal));
+          return API.saveGoal(name)
+          .then((goal) => this.props.store.dispatch(addGoalAction(goal)))
+          .catch(e => (
+            console.log('Error while adding Goal at the server: ', e)
+          ))
         };
 
          onRemove = (goal) => {
           this.props.store.dispatch(removeGoalAction(goal.id));
+          API.deleteGoal(goal.id)
+          .then(() => console.log('Goal deleted from server succcessfully'))
+          .catch(() => {
+            console.log('Error while removing toddo from server.')
+            this.props.store.dispatch(addGoalAction(goal));
+            alert('an Error Occured')
+          })
         }
 
         onGoalClick = (goal) => {
@@ -123,7 +147,7 @@
           );
         }
       }
-
+      
       ReactDOM.render(<App store={store}/>, document.getElementById("app"));
     </script>
   </body>
